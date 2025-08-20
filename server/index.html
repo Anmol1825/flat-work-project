@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flat Work</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .task-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .highlight {
+            animation: highlight 1.5s ease-out;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(255, 255, 0, 0.3); }
+            100% { background-color: transparent; }
+        }
+        
+        .assignee-pill {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+        
+        .assignee-input-container {
+            position: relative;
+        }
+        
+        .assignee-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+            z-index: 10;
+            display: none;
+        }
+        
+        .assignee-option {
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .assignee-option:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .admin-badge {
+            background-color: #fecaca;
+            color: #991b1b;
+        }
+        
+        .user-badge {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto">
+        <header class="text-center mb-10">
+            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/26c083e2-2dc9-4f5f-a827-7683009ec850.png" alt="Flat Work logo in bold blue letters on clean white background with minimalist design" class="mx-auto mb-6 rounded-lg shadow-md w-full max-w-md">
+            <p class="text-lg text-gray-600">Simple Task Management for Your Team</p>
+            
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="adminBtn" class="px-4 py-2 bg-red-100 text-red-800 font-medium rounded-lg">Login as Admin</button>
+                <button id="userBtn" class="px-4 py-2 bg-blue-100 text-blue-800 font-medium rounded-lg">Login as User</button>
+            </div>
+        </header>
+        
+        <div id="adminPanel" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
+            <form id="taskForm" class="flex flex-col gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="taskInput" class="block text-sm font-medium text-gray-700 mb-1">Task Description</label>
+                        <input 
+                            type="text" 
+                            id="taskInput" 
+                            placeholder="Enter task description..." 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        >
+                    </div>
+                    <div class="assignee-input-container">
+                        <label for="assigneeInput" class="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+                        <input 
+                            type="text" 
+                            id="assigneeInput" 
+                            placeholder="Who's responsible?"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        >
+                        <div id="assigneeDropdown" class="assignee-dropdown">
+                            <!-- Dynamic options will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+                <button 
+                    type="submit" 
+                    class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+                >
+                    Add Task
+                </button>
+            </form>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    Your Tasks
+                    <span id="userRoleBadge" class="ml-2 text-xs px-2 py-1 rounded-full">Not logged in</span>
+                </h2>
+                <div class="text-gray-500" id="taskStats">0 tasks</div>
+            </div>
+            
+            <div id="taskList" class="divide-y divide-gray-200">
+                <!-- Task items will be added here by JavaScript -->
+                <div class="p-6 text-center text-gray-500" id="emptyState">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/cc5bf4a2-6b50-4ba6-95be-cca28a4a0d2f.png" alt="Empty task list illustration showing a clipboard with checkboxes" class="mx-auto mb-4 w-48">
+                    <p>No tasks yet. Admin must login to add tasks!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Element Selection (no changes here) ---
+        const adminBtn = document.getElementById('adminBtn');
+        const userBtn = document.getElementById('userBtn');
+        const adminPanel = document.getElementById('adminPanel');
+        const taskForm = document.getElementById('taskForm');
+        const taskInput = document.getElementById('taskInput');
+        const assigneeInput = document.getElementById('assigneeInput');
+        const assigneeDropdown = document.getElementById('assigneeDropdown');
+        const taskList = document.getElementById('taskList');
+        const emptyState = document.getElementById('emptyState');
+        const taskStats = document.getElementById('taskStats');
+        const userRoleBadge = document.getElementById('userRoleBadge');
+        
+        // --- State and Config (updated) ---
+        let currentUserRole = null;
+        const PASSWORD = "admin123";
+        const API_URL = 'http://flat-work-app.onrender.com/tasks'; // URL of our new server
+        let tasks = []; // This will be filled from the server
+        const teamMembers = ["Alex Johnson", "Sarah Williams", "Michael Chen", "Emily Rodriguez", "David Kim"];
+
+        // --- NEW: Functions to talk to the server ---
+
+        // Fetch all tasks from the server
+        async function fetchTasks() {
+            try {
+                const response = await fetch(API_URL);
+                tasks = await response.json();
+                renderTasks();
+            } catch (error) {
+                console.error("Failed to fetch tasks:", error);
+                alert("Could not connect to the server. Please make sure it's running.");
+            }
+        }
+
+        // Add a task by sending it to the server
+        async function addTask(text, assignee) {
+            if (currentUserRole !== 'admin') {
+                alert("Only admin can add tasks.");
+                return;
+            }
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, assignee })
+            });
+            const newTask = await response.json();
+            tasks.unshift(newTask); // Add the new task from server response
+            renderTasks();
+        }
+
+        // Toggle a task's status by telling the server
+        async function toggleTask(id) {
+            if (!currentUserRole) {
+                alert("Please login first to complete tasks.");
+                return;
+            }
+            const response = await fetch(`${API_URL}/${id}`, { method: 'PATCH' });
+            const updatedTask = await response.json();
+            // Update the specific task in our local array
+            const taskIndex = tasks.findIndex(t => t.id === id);
+            if (taskIndex !== -1) {
+                tasks[taskIndex] = updatedTask;
+            }
+            renderTasks();
+        }
+        
+        // Delete a task by telling the server
+        async function deleteTask(id) {
+            if (currentUserRole !== 'admin') {
+                alert("Only admin can delete tasks.");
+                return;
+            }
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            tasks = tasks.filter(t => t.id !== id); // Remove from local array
+            renderTasks();
+        }
+
+        // --- Rendering and Event Listeners (with small changes) ---
+        
+        // The renderTasks function now uses `task.id` instead of the array index
+        function renderTasks() {
+            // (The renderTasks function is large, so only the key changes are highlighted)
+            // Most of your original renderTasks function can be pasted here.
+            // **Just make sure you update these lines:**
+            // toggleTask(index) becomes -> toggleTask(task.id)
+            // deleteTask(index) becomes -> deleteTask(task.id)
+            // I will provide the complete, updated renderTasks function below for clarity.
+            
+            if (tasks.length === 0) {
+                emptyState.style.display = 'block';
+                taskList.innerHTML = '';
+                updateStats();
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            taskList.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const taskElement = document.createElement('div');
+                taskElement.className = `task-card px-5 py-3 flex items-center ${task.completed ? 'bg-gray-50' : ''}`;
+                
+                // Status column
+                const statusColumn = document.createElement('div');
+                statusColumn.className = 'flex items-center w-16';
+                const checkbox = document.createElement('div');
+                checkbox.className = `mr-2 flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full ${task.completed ? 'status-completed' : 'status-pending'}`;
+                
+                if (currentUserRole && !task.completed) {
+                    checkbox.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 cursor-pointer" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+                    checkbox.addEventListener('click', () => toggleTask(task.id)); // **CHANGED**
+                } else if (task.completed) {
+                    checkbox.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+                } else {
+                    checkbox.innerHTML = `<div class="h-2 w-2 rounded-full bg-gray-300"></div>`;
+                }
+                statusColumn.appendChild(checkbox);
+
+                // Task description
+                const taskColumn = document.createElement('div');
+                taskColumn.className = 'flex-1 min-w-0';
+                const text = document.createElement('p');
+                text.className = `text-sm font-medium ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`;
+                text.textContent = task.text;
+                taskColumn.appendChild(text);
+
+                // Assignee
+                const assigneeColumn = document.createElement('div');
+                assigneeColumn.className = 'w-32';
+                const assignee = document.createElement('span');
+                assignee.className = 'assignee-pill';
+                assignee.textContent = task.assignee;
+                assigneeColumn.appendChild(assignee);
+
+                // Date
+                const dateColumn = document.createElement('div');
+                dateColumn.className = 'w-24 text-xs text-gray-500';
+                dateColumn.textContent = new Date(task.timestamp).toLocaleDateString();
+
+                // Actions
+                const actionsColumn = document.createElement('div');
+                actionsColumn.className = 'w-16 flex justify-end';
+                if (currentUserRole === 'admin') {
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'text-sm font-medium text-red-600 hover:text-red-800';
+                    deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+                    deleteButton.addEventListener('click', () => deleteTask(task.id)); // **CHANGED**
+                    actionsColumn.appendChild(deleteButton);
+                }
+                
+                const flexContainer = document.createElement('div');
+                flexContainer.className = 'flex items-center gap-4 w-full';
+                flexContainer.append(statusColumn, taskColumn, assigneeColumn, dateColumn, actionsColumn);
+                taskElement.appendChild(flexContainer);
+                taskList.appendChild(taskElement);
+            });
+            updateStats();
+        }
+
+        function updateStats() {
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(task => task.completed).length;
+            taskStats.textContent = `${completedTasks}/${totalTasks} tasks completed`;
+        }
+
+        // Form submission now calls the new async addTask function
+        taskForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = taskInput.value.trim();
+            const assignee = assigneeInput.value.trim();
+            if (text && assignee) {
+                addTask(text, assignee);
+                taskInput.value = '';
+                assigneeInput.value = '';
+                taskInput.focus();
+            }
+        });
+
+        // Other UI logic (login, dropdowns) remains mostly the same.
+        // The original functions for login and the assignee dropdown can be kept.
+        // The important part is that we call fetchTasks() on page load.
+        // (Copy the login handlers and dropdown handlers from your original script here)
+
+        // Login handlers
+        adminBtn.addEventListener('click', function() {
+            const password = prompt("Enter admin password:");
+            if (password === PASSWORD) {
+                currentUserRole = 'admin';
+                adminPanel.classList.remove('hidden');
+                userRoleBadge.textContent = 'ADMIN';
+                userRoleBadge.className = 'ml-2 text-xs px-2 py-1 rounded-full admin-badge';
+                renderTasks();
+            } else {
+                alert("Incorrect password!");
+            }
+        });
+        
+        userBtn.addEventListener('click', function() {
+            currentUserRole = 'user';
+            adminPanel.classList.add('hidden');
+            userRoleBadge.textContent = 'USER';
+            userRoleBadge.className = 'ml-2 text-xs px-2 py-1 rounded-full user-badge';
+            renderTasks();
+        });
+
+        // Dropdown handlers (same as before)
+        function filterMembers(query) { if (!query) { return teamMembers; } return teamMembers.filter(member => member.toLowerCase().includes(query.toLowerCase())); }
+        function renderDropdownOptions(filterText = '') { const filteredMembers = filterMembers(filterText); if (filteredMembers.length === 0) { assigneeDropdown.style.display = 'none'; return; } assigneeDropdown.innerHTML = filteredMembers.map(member => `<div class="assignee-option" data-member="${member}">${member}</div>`).join(''); assigneeDropdown.style.display = 'block'; document.querySelectorAll('.assignee-option').forEach(option => { option.addEventListener('click', function() { assigneeInput.value = this.getAttribute('data-member'); assigneeDropdown.style.display = 'none'; }); }); }
+        assigneeInput.addEventListener('focus', function() { renderDropdownOptions(); });
+        assigneeInput.addEventListener('input', function() { renderDropdownOptions(this.value); });
+        document.addEventListener('click', function(e) { if (!assigneeInput.contains(e.target) && !assigneeDropdown.contains(e.target)) { assigneeDropdown.style.display = 'none'; } });
+
+        // --- Initial Load ---
+        fetchTasks(); // Load tasks from server when the page opens
+    });
+</script></body>
+</html>
